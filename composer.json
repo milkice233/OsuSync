@@ -1,5 +1,6 @@
 {
   "require": {
-    "guzzlehttp/guzzle": "6.2.3"
+    "guzzlehttp/guzzle": "6.2.3",
+    "sunra/php-simple-html-dom-parser": "v1.5.2"
   }
 }

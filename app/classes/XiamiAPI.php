@@ -12,6 +12,7 @@
                                         \/__/
 
  * */
+use Sunra\PhpSimple\HtmlDomParser;
 
 require '../../vendor/autoload.php';
 
@@ -65,7 +66,7 @@ class XiamiAPI
 
         return json_encode(array(
             'status'=>'true',
-            'QRCode'=>'data:image/gif;base64,'.base64_encode($res->getBody()),
+            'QRCode' => 'data:image/png;base64,' . base64_encode($res->getBody()),
             'lgToken'=>$replyData['data']['lgToken']
         ));
     }
@@ -108,6 +109,34 @@ class XiamiAPI
                 //TODO:Other status code?
                 break;
         }
-        return json_encode(array('status'=>$globalStatus,$statusCode));
+        $jarFile->save(""); //TODO:Specify the cookie location
+        return json_encode(array('status' => $globalStatus, 'statusCode' => $statusCode));
+    }
+
+    public function getCollectionList($cookie)
+    {
+        $getCollectionListRequest = new GuzzleHttp\Client();
+        $jarFile = new \GuzzleHttp\Cookie\FileCookieJar("", true);//TODO:Specify the cookie location
+        $res = $getCollectionListRequest->request('GET', 'http://www.xiami.com/space/collect/u', [
+            'cookies' => $jarFile
+        ]);
+        if ($res->getStatusCode() != 200) {
+            //TODO:Exception handle
+        }
+        $html = HTMLDomParser::str_get_html($res->getBody());
+        $collections = array();
+        foreach ($html->find('a[href^=/collect/]') as $element) {
+            if (!empty($element->title)) {
+                $collection = array();
+                if (preg_match('/-?[1-9]\d*/', $element->href, $collection)) { //TODO:Exception handle
+                    $collections[$collection[0]] = $element->title;
+                }
+            }
+        }
+        return json_encode(array(
+            'status' => 'true',
+            'collectionList' => $collections
+        ));
     }
 }
+
