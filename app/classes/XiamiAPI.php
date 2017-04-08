@@ -138,5 +138,74 @@ class XiamiAPI
             'collectionList' => $collections
         ));
     }
-}
 
+    public function addSongToCollection($cookie, $songId, $collectionId, $tag = '', $comment = '')
+    {
+        $addSongToCollectionRequest = new GuzzleHttp\Client();
+        $jarFile = new \GuzzleHttp\Cookie\FileCookieJar("", true);//TODO:Specify the cookie location
+        $xiamiToken = "";
+        foreach ($jarFile->toArray() as $value) {
+            if ($value['Name'] == '_xiamitoken') {
+                $xiamiToken = $value['Value'];
+            }
+        }
+        $globalResult = false;
+        $message = '';
+        if (empty($tag) && empty($comment)) {
+            $res = $addSongToCollectionRequest->request(
+                'POST',
+                'http://www.xiami.com/collect/ajax-add-song', [
+                'cookies' => $jarFile,
+                'headers' => [
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36',
+                    'Accept' => '*/*',
+                    'X-Requested-With' => ' XMLHttpRequest',
+                    'Origin' => 'http://www.xiami.com',
+                    'Referer' => 'http://www.xiami.com/collect/' . $collectionId
+                ],
+                'form_params' => [
+                    'list_id' => $collectionId,
+                    'song_id' => $songId,
+                    '_xiamitoken' => $xiamiToken
+                ]
+            ]);
+            if ($res->getStatusCode() != 200) {
+                //TODO:Exception handle
+            }
+            $result = json_decode($res->getBody(), true);
+            $globalResult = $result['state'];
+            $message = $result['message'];
+        } else {
+            $res = $addSongToCollectionRequest->request(
+                'POST',
+                'http://www.xiami.com/song/collect', [
+                'cookies' => $jarFile,
+                'headers' => [
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36',
+                    'Accept' => '*/*',
+                    'X-Requested-With' => ' XMLHttpRequest',
+                    'Origin' => 'http://www.xiami.com',
+                    'Referer' => 'http://www.xiami.com/space/lib-song?spm=a1z1s.6843761.226669510.3.DffY3f'
+                ],
+                'form_params' => [
+                    '_xiamitoken' => $xiamiToken,
+                    'id' => $songId,
+                    'list_id' => $collectionId,
+                    'tag_name' => $tag,
+                    'description' => $comment,
+                    'submit' => '保 存'
+                ]
+            ]);
+            if ($res->getStatusCode() != 200) {
+                //TODO:Exception handle
+            }
+            $globalResult = strpos($res->getBody(), '添加成功') === false ? false : true;
+        }
+        return json_encode(array(
+            'status' => $globalResult ? 'success' : 'failure',
+            'message' => $message
+        ));
+
+
+    }
+}
