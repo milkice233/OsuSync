@@ -85,7 +85,7 @@ class OsuFile
                 $fatherNode = substr($value, 1, strlen($value) - 2);
                 continue;
             }
-            $param = trim(substr($value, 0, stripos($value, ':') + 1));
+            $param = trim(substr($value, 0, stripos($value, ':')));
             $v = trim(substr($value, stripos($value, ':') + 1));
             $this->metaData[$fatherNode][$param] = $v;
         }
