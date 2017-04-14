@@ -13,21 +13,22 @@
 
  * */
 
+require '../../vendor/autoload.php';
 
-class OsuFileParse
+class OsuFile
 {
     private $beatmapSetId = -1;
     private $beatmapId = -1;
     private $apiKey = "";
     private $OsuFileContent = "";
-
+    private $metaData = array();
     /**
      * OsuFileParse constructor.
-     * @param int $BSid BeatMapSet id,can't be empty
+     * @param int $BSid BeatMapSet id
      * @param int $BMid BeatMap id
      * @param String $apiKey Api Key,can't be empty
      */
-    public function __construct($BSid, $BMid = -1, $apiKey)
+    public function __construct($BSid = -1, $BMid = -1, $apiKey)
     {
         $this->beatmapSetIdId = $BSid;
         $this->beatmapId = $BMid;
@@ -41,7 +42,7 @@ class OsuFileParse
             $beatmapClient = new \GuzzleHttp\Client();
             $res = $beatmapClient->request(
                 'GET',
-                'https://osu.ppy.sh/api/get_beatmaps?k=' . $this->apiKey . '&s=' . $this->beatmapSetId
+                'http://osu.ppy.sh/api/get_beatmaps?k=' . $this->apiKey . '&s=' . $this->beatmapSetId
             );
             if ($res->getStatusCode() != 200) {
                 //TODO:Exception handle
@@ -63,5 +64,30 @@ class OsuFileParse
             //TODO:Exception handle
         }
         $this->OsuFileContent = $res->getBody();
+    }
+
+    public function parse()
+    {
+        if (empty($this->OsuFileContent)) {
+            //TODO:Exception handle
+        }
+        $osuArray = explode("\r\n", $this->OsuFileContent);
+        if (strstr($osuArray[0], "osu file format v") === false) {
+            //TODO:not an osu file
+        }
+        $this->metaData['version'] = substr($osuArray[0], stripos($osuArray[0], 'v') + 1);
+        $fatherNode = "";
+        foreach (array_slice($osuArray, 1) as $value) {
+            if (empty($value)) {
+                continue;
+            }
+            if (stripos($value, "[") == 0 && stripos($value, "]") == strlen($value) - 1) {
+                $fatherNode = substr($value, 1, strlen($value) - 2);
+                continue;
+            }
+            $param = trim(substr($value, 0, stripos($value, ':') + 1));
+            $v = trim(substr($value, stripos($value, ':') + 1));
+            $this->metaData[$fatherNode][$param] = $v;
+        }
     }
 }
